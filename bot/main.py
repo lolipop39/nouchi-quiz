@@ -5,12 +5,7 @@ import random
 import httpx
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    Application,
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-)
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 load_dotenv()
 
@@ -31,50 +26,57 @@ async def fetch_questions() -> list[dict]:
         return response.json()
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_message:
-        await update.effective_message.reply_text(
-            "Bienvenue sur Nouchi Quiz ! Envoie /quiz pour commencer."
-        )
+def score(context: ContextTypes.DEFAULT_TYPE) -> dict[str, int]:
+    return context.user_data.setdefault("score", {"correct": 0, "total": 0})
 
 
-async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.effective_message:
-        return
-
+async def send_next_question(message, context: ContextTypes.DEFAULT_TYPE) -> None:
     try:
         questions = await fetch_questions()
     except httpx.HTTPError:
-        await update.effective_message.reply_text(
-            "Le service de quiz est indisponible. Réessaie dans un instant."
+        await message.reply_text("Le service de quiz est indisponible. Réessaie bientôt.")
+        return
+
+    used_ids = context.user_data.setdefault("used_question_ids", [])
+    available = [item for item in questions if item["id"] not in used_ids]
+
+    if not available:
+        current_score = score(context)
+        await message.reply_text(
+            f"Quiz terminé ! Ton score final est {current_score['correct']}/{current_score['total']}.\n\n"
+            "Envoie /quiz pour une nouvelle partie."
         )
+        context.user_data["used_question_ids"] = []
+        context.user_data["score"] = {"correct": 0, "total": 0}
         return
 
-    if not questions:
-        await update.effective_message.reply_text("Aucune question disponible.")
-        return
+    question = random.choice(available)
+    used_ids.append(question["id"])
 
-    question = random.choice(questions)
     keyboard = [
-        [
-            InlineKeyboardButton(
-                choice,
-                callback_data=f"answer:{question['id']}:{index}",
-            )
-        ]
+        [InlineKeyboardButton(choice, callback_data=f"answer:{question['id']}:{index}")]
         for index, choice in enumerate(question["choices"])
     ]
 
-    await update.effective_message.reply_text(
-        question["text"],
+    await message.reply_text(
+        f"Question {len(used_ids)}/{len(questions)}\n\n{question['text']}",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
 
-async def answer_callback(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_message:
+        await update.effective_message.reply_text(
+            "Bienvenue sur Nouchi Quiz ! Envoie /quiz pour démarrer une partie."
+        )
+
+
+async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_message:
+        await send_next_question(update.effective_message, context)
+
+
+async def answer_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
 
     if not query or not query.data:
@@ -98,24 +100,28 @@ async def answer_callback(
             response.raise_for_status()
             result = response.json()
     except (httpx.HTTPError, IndexError, StopIteration, ValueError):
-        await query.edit_message_text(
-            "Impossible de vérifier cette réponse. Relance /quiz."
-        )
+        await query.edit_message_text("Erreur de vérification. Envoie /quiz pour recommencer.")
         return
 
-    verdict = "Bonne réponse !" if result["correct"] else "Mauvaise réponse."
+    current_score = score(context)
+    current_score["total"] += 1
+
+    if result["correct"]:
+        current_score["correct"] += 1
+        verdict = "Bonne réponse !"
+    else:
+        verdict = "Mauvaise réponse."
+
     await query.edit_message_text(
-        f"{question['text']}\n\n"
-        f"Ton choix : {choice}\n"
-        f"{verdict}"
+        f"{question['text']}\n\nTon choix : {choice}\n{verdict}\n"
+        f"Score : {current_score['correct']}/{current_score['total']}"
     )
+
+    await send_next_question(query.message, context)
 
 
 def main() -> None:
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        level=logging.INFO,
-    )
+    logging.basicConfig(level=logging.INFO)
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     application = Application.builder().token(TOKEN).build()
