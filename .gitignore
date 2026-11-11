@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Node.js
+node_modules/
+.next/
+out/
+dist/
+
+# Environnement et secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# IDE et système
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
