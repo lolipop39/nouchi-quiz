@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
-from app.models import Question
+from app.models import AnswerResult, AnswerSubmission, Question
 
 app = FastAPI(
     title="Nouchi Quiz API",
@@ -20,6 +20,11 @@ QUESTIONS = [
     ),
 ]
 
+ANSWER_KEY = {
+    1: "Réponse A",
+    2: "Choix 2",
+}
+
 
 @app.get("/")
 def read_root():
@@ -38,3 +43,16 @@ def health_check():
 @app.get("/questions", response_model=list[Question])
 def list_questions():
     return QUESTIONS
+
+
+@app.post("/answers", response_model=AnswerResult)
+def submit_answer(submission: AnswerSubmission):
+    correct_choice = ANSWER_KEY.get(submission.question_id)
+
+    if correct_choice is None:
+        raise HTTPException(status_code=404, detail="Question introuvable")
+
+    return AnswerResult(
+        question_id=submission.question_id,
+        correct=submission.choice == correct_choice,
+    )
