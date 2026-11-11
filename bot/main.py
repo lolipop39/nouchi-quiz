@@ -1,5 +1,6 @@
 import logging
 import os
+import random
 
 import httpx
 from dotenv import load_dotenv
@@ -53,7 +54,7 @@ async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.effective_message.reply_text("Aucune question disponible.")
         return
 
-    question = questions[0]
+    question = random.choice(questions)
     keyboard = [
         [
             InlineKeyboardButton(

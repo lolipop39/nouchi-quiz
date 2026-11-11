@@ -10,19 +10,41 @@ app = FastAPI(
 QUESTIONS = [
     Question(
         id=1,
-        text="Question de démonstration : choisis une réponse.",
-        choices=["Réponse A", "Réponse B", "Réponse C"],
+        text="Quelle est la capitale politique de la Côte d’Ivoire ?",
+        choices=["Yamoussoukro", "Abidjan", "Bouaké"],
     ),
     Question(
         id=2,
-        text="Deuxième question de démonstration.",
-        choices=["Choix 1", "Choix 2", "Choix 3"],
+        text="À quelle date la Côte d’Ivoire a-t-elle proclamé son indépendance ?",
+        choices=["7 août 1960", "7 août 1958", "7 août 1970"],
+    ),
+    Question(
+        id=3,
+        text="Quel est l’hymne national ivoirien ?",
+        choices=["L’Abidjanaise", "La Marseillaise", "L’Unité africaine"],
+    ),
+    Question(
+        id=4,
+        text="Quelle est la devise de la République de Côte d’Ivoire ?",
+        choices=[
+            "Union, Discipline, Travail",
+            "Paix, Justice, Progrès",
+            "Liberté, Égalité, Fraternité",
+        ],
+    ),
+    Question(
+        id=5,
+        text="L’attiéké est principalement préparé à partir de quel tubercule ?",
+        choices=["Manioc", "Igname", "Patate douce"],
     ),
 ]
 
 ANSWER_KEY = {
-    1: "Réponse A",
-    2: "Choix 2",
+    1: "Yamoussoukro",
+    2: "7 août 1960",
+    3: "L’Abidjanaise",
+    4: "Union, Discipline, Travail",
+    5: "Manioc",
 }
 
 

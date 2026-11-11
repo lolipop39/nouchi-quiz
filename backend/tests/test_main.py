@@ -17,14 +17,15 @@ def test_list_questions_hides_answers():
 
     assert response.status_code == 200
     questions = response.json()
-    assert len(questions) == 2
+    assert len(questions) == 5
+    assert questions[0]["text"] == "Quelle est la capitale politique de la Côte d’Ivoire ?"
     assert set(questions[0]) == {"id", "text", "choices"}
 
 
 def test_submit_correct_answer():
     response = client.post(
         "/answers",
-        json={"question_id": 1, "choice": "Réponse A"},
+        json={"question_id": 1, "choice": "Yamoussoukro"},
     )
 
     assert response.status_code == 200
@@ -34,7 +35,7 @@ def test_submit_correct_answer():
 def test_submit_incorrect_answer():
     response = client.post(
         "/answers",
-        json={"question_id": 1, "choice": "Réponse B"},
+        json={"question_id": 1, "choice": "Abidjan"},
     )
 
     assert response.status_code == 200
@@ -44,7 +45,7 @@ def test_submit_incorrect_answer():
 def test_submit_answer_for_missing_question():
     response = client.post(
         "/answers",
-        json={"question_id": 999, "choice": "Réponse A"},
+        json={"question_id": 999, "choice": "Yamoussoukro"},
     )
 
     assert response.status_code == 404
