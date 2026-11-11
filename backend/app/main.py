@@ -6,6 +6,15 @@ app = FastAPI(
 )
 
 
+@app.get("/")
+def read_root():
+    return {
+        "message": "Bienvenue sur Nouchi Quiz API",
+        "docs": "/docs",
+        "health": "/health",
+    }
+
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
